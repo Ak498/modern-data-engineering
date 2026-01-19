@@ -1,5 +1,5 @@
 /* ============================================================
-   WEEK 1 — ADVANCED SQL PATTERNS (PORTFOLIO)
+   WEEK 1 ï¿½ ADVANCED SQL PATTERNS (PORTFOLIO)
    Author: Akinrinola Akande
 
    Purpose:
@@ -11,7 +11,7 @@
    - Window functions & ranking patterns
    - Grain awareness and semantic correctness
    - COUNT(DISTINCT) workarounds
-   - SQL Server–specific optimizations
+   - SQL Serverï¿½specific optimizations
    - Analytical reasoning and edge-case handling
    ============================================================ */
 
@@ -21,7 +21,7 @@
    SQL Dialect: SQL Server
    Table: sales
    Table Grain: Order line (order_id + sku)
-   Dataset Size Assumption: Medium (10M–100M rows)
+   Dataset Size Assumption: Medium (10Mï¿½100M rows)
 
    NOTE:
    - Queries assume `status = 'Shipped - Delivered to Buyer'`
@@ -57,9 +57,9 @@ WITH CTE AS (
 	  , amount
 	  , ship_service_level
 	  , ROW_NUMBER() OVER (
-		  PARTITION BY sku
-		  ORDER BY date DESC
-			, order_id DESC
+		    PARTITION BY sku
+		    ORDER BY date DESC
+			    , order_id DESC
 		 ) AS recent_rank
 	FROM sales
 	-- Filtering before windowing prevents ranking irrelevant statuses
@@ -86,16 +86,16 @@ SELECT
 FROM sales AS s
 WHERE s.status = 'Shipped - Delivered to Buyer'
   AND s.date = (SELECT MAX(s2.date) 
-				FROM sales AS s2 
-				WHERE s.sku = s2.sku
-				  AND s.status = s2.status)
+				        FROM sales AS s2 
+				        WHERE s.sku = s2.sku
+				          AND s.status = s2.status)
 -- This approach assumes order_id increases with date.
 -- If not guaranteed, this method can fail.
   AND s.Order_ID = (SELECT MAX(s3.order_id) 
-					FROM sales AS s3 
-					WHERE s.sku = s3.sku
-					  AND s.date = s3.date
-					  AND s.status = s3.status)
+					          FROM sales AS s3 
+					          WHERE s.sku = s3.sku
+					            AND s.date = s3.date
+					            AND s.status = s3.status)
 
 --Q Why filter status before ranking? 
 --A TO ensure we are picking the order with the right status
@@ -122,20 +122,31 @@ GROUP BY Fulfilment, currency;
 --WHY:  Emulates COUNT(DISTINCT) with window functions when DISTINCT is not allowed in windows
 
 WITH order_cte AS (
-SELECT DISTINCT
-  Fulfilment
-  , currency
-  , order_id
-  , SUM(Amount) OVER (PARTITION BY Fulfilment, currency) AS Revenue
-  , ROW_NUMBER() OVER (PARTITION BY Fulfilment, currency, order_id ORDER BY order_id) AS order_rnk
-FROM sales
-WHERE status = 'Shipped - Delivered to Buyer'
+  SELECT DISTINCT
+    Fulfilment
+    , currency
+    , order_id
+    , SUM(Amount) OVER (
+        PARTITION BY Fulfilment
+          , currency
+      ) AS Revenue
+    , ROW_NUMBER() OVER (
+        PARTITION BY Fulfilment
+          , currency
+          , order_id 
+        ORDER BY order_id
+      ) AS order_rnk
+  FROM sales
+  WHERE status = 'Shipped - Delivered to Buyer'
 )
 SELECT DISTINCT
   Fulfilment
   , currency
   , Revenue
-  , SUM(CASE WHEN order_rnk=1 then 1 END) OVER (PARTITION BY Fulfilment, currency) AS total_orders
+  , SUM(CASE WHEN order_rnk = 1 then 1 END) OVER (
+      PARTITION BY Fulfilment
+        , currency
+    ) AS total_orders
 FROM order_cte;
 
 --Q Why group by currency?
@@ -153,7 +164,10 @@ SELECT
   currency
   , Date
   , SUM(AMOUNT) AS daily_revenue
-  , SUM(SUM(AMOUNT)) OVER (PARTITION BY currency ORDER BY Date) cumulative_revenue
+  , SUM(SUM(AMOUNT)) OVER (
+      PARTITION BY currency 
+      ORDER BY Date
+    ) AS cumulative_revenue
 FROM sales
 WHERE status = 'Shipped - Delivered to Buyer'
 GROUP BY currency, Date;
@@ -162,20 +176,20 @@ GROUP BY currency, Date;
 --WHY: slightly longer but more readable alternative
 WITH daily_sales AS (
     SELECT
-        date
-        ,currency
-        , SUM(amount) AS daily_revenue
+      date
+      , currency
+      , SUM(amount) AS daily_revenue
     FROM sales
     WHERE status = 'Shipped - Delivered to Buyer'
     GROUP BY date, currency
 )
 SELECT
-    date,
-    currency,
-    daily_revenue,
-    SUM(daily_revenue) OVER (
-        PARTITION BY currency
-        ORDER BY date
+  date
+  , currency
+  , daily_revenue
+  , SUM(daily_revenue) OVER (
+      PARTITION BY currency
+      ORDER BY date
     ) AS cumulative_revenue
 FROM daily_sales;
 
@@ -187,7 +201,7 @@ FROM daily_sales;
 /* ------------------------------------------------------------
    PROBLEM 4: For each shipping service level, what are the top 3 SKUs by revenue in INR?
    ------------------------------------------------------------ */
-WITH sku_sales as (
+WITH sku_sales AS (
   SELECT 
     ship_service_level
     , sku
@@ -198,16 +212,16 @@ WITH sku_sales as (
   GROUP BY ship_service_level, sku 
 )
 , sku_ranking AS (
- SELECT 
-    ship_service_level
-    , sku
-    , revenue
--- DENSE_RANK is used to preserve ties in revenue
-	, DENSE_RANK() OVER (
-		PARTITION BY  ship_service_level
-		ORDER BY revenue DESC
-	 ) sku_rank
-  FROM sku_sales 
+   SELECT 
+     ship_service_level
+     , sku
+     , revenue
+     -- DENSE_RANK is used to preserve ties in revenue
+	   , DENSE_RANK() OVER (
+		     PARTITION BY  ship_service_level
+		     ORDER BY revenue DESC
+	     ) AS sku_rank
+   FROM sku_sales 
   )
 SELECT 
   ship_service_level
@@ -230,17 +244,17 @@ WHERE sku_rank <= 3;
 --METHOD 1: WINDOWS FUNCTION + CTE
 --WHY: Simple and short
 WITH ordered_sales AS (
-    SELECT
-        order_id,
-        sku,
-        fulfilment,
-        date,
-        LAG(date) OVER (
-            PARTITION BY sku
-            ORDER BY date
-        ) AS prev_order_date
-    FROM sales
-    WHERE status = 'Shipped - Delivered to Buyer'
+  SELECT
+    order_id
+    , sku
+    , fulfilment
+    , date
+    , LAG(date) OVER (
+        PARTITION BY sku
+        ORDER BY date
+      ) AS prev_order_date
+  FROM sales
+  WHERE status = 'Shipped - Delivered to Buyer'
 )
 SELECT
   sku
@@ -257,10 +271,10 @@ WHERE prev_order_date IS NOT NULL
 --MTHOD 2: INLINE WINDOWS FUNCTION
 --WHY: works in snowflake but not in sql server
 SELECT
-    sku,
-    order_id,
-    date,
-    DATEDIFF( DAY,LAG(date) OVER (PARTITION BY sku ORDER BY date), date) AS gap_days
+  sku,
+  , order_id
+  , date
+  , DATEDIFF( DAY, LAG(date) OVER (PARTITION BY sku ORDER BY date), date) AS gap_days
 FROM sales
 WHERE status = 'Shipped - Delivered to Buyer'
 QUALIFY DATEDIFF( DAY,LAG(date) OVER (PARTITION BY sku ORDER BY date), date) > 30;
@@ -268,22 +282,22 @@ QUALIFY DATEDIFF( DAY,LAG(date) OVER (PARTITION BY sku ORDER BY date), date) > 3
 --METHOD 3: 
 --WHY: tricky but works nicely
 WITH numbered_orders AS (
-    SELECT
-        order_id,
-        sku,
-        date,
-        ROW_NUMBER() OVER (
-            PARTITION BY sku
-            ORDER BY date
-        ) AS rn
+  SELECT
+    order_id
+    , sku
+    , date
+    , ROW_NUMBER() OVER (
+        PARTITION BY sku
+        ORDER BY date
+      ) AS rn
     FROM sales
     WHERE status = 'Shipped - Delivered to Buyer'
 )
 SELECT
-    curr.sku,
-    curr.order_id,
-    curr.date,
-    DATEDIFF(DAY, prev.date, curr.date) AS gap_days
+  curr.sku,
+  , curr.order_id
+  , curr.date
+  , DATEDIFF(DAY, prev.date, curr.date) AS gap_days
 FROM numbered_orders curr
 INNER JOIN numbered_orders prev
   ON curr.sku = prev.sku
@@ -293,18 +307,19 @@ WHERE DATEDIFF(DAY, prev.date, curr.date) > 30;
 --METHOD 4:CROSS APPLY (works only in sql server)
 --WHY: SHORT query and effective
 SELECT
-    s.sku,
-    s.order_id,
-    s.date,
-    DATEDIFF(DAY, p.prev_date, s.date) AS gap_days
+  s.sku
+  , s.order_id
+  , s.date
+  , DATEDIFF(DAY, p.prev_date, s.date) AS gap_days
 FROM sales s
 CROSS APPLY (
-    SELECT TOP 1 date AS prev_date
-    FROM sales s2
-    WHERE s2.sku = s.sku
-      AND s2.date < s.date
-      AND s2.status = 'Shipped - Delivered to Buyer'
-    ORDER BY s2.date DESC
+  SELECT 
+    TOP 1 date AS prev_date
+  FROM sales s2
+  WHERE s2.sku = s.sku
+    AND s2.date < s.date
+    AND s2.status = 'Shipped - Delivered to Buyer'
+  ORDER BY s2.date DESC
 ) p
 WHERE s.status = 'Shipped - Delivered to Buyer'
   AND DATEDIFF(DAY, p.prev_date, s.date) > 30;

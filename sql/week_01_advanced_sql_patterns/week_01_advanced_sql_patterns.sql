@@ -50,20 +50,20 @@
 --WHY: Most readable
 
 WITH CTE AS (
-	SELECT 
-	  sku
-	  , order_id
-	  , date
-	  , amount
-	  , ship_service_level
-	  , ROW_NUMBER() OVER (
-		    PARTITION BY sku
-		    ORDER BY date DESC
-			    , order_id DESC
-		 ) AS recent_rank
-	FROM sales
+  SELECT 
+    sku
+	, order_id
+	, date
+	, amount
+	, ship_service_level
+	, ROW_NUMBER() OVER (
+		PARTITION BY sku
+		ORDER BY date DESC
+		  , order_id DESC
+	  ) AS recent_rank
+  FROM sales
 	-- Filtering before windowing prevents ranking irrelevant statuses
-	WHERE status = 'Shipped - Delivered to Buyer'
+  WHERE status = 'Shipped - Delivered to Buyer'
 )
 SELECT
   sku

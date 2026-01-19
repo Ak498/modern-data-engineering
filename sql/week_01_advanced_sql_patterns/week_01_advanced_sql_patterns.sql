@@ -86,16 +86,16 @@ SELECT
 FROM sales AS s
 WHERE s.status = 'Shipped - Delivered to Buyer'
   AND s.date = (SELECT MAX(s2.date) 
-				        FROM sales AS s2 
-				        WHERE s.sku = s2.sku
-				          AND s.status = s2.status)
+				FROM sales AS s2 
+				WHERE s.sku = s2.sku
+				  AND s.status = s2.status)
 -- This approach assumes order_id increases with date.
 -- If not guaranteed, this method can fail.
   AND s.Order_ID = (SELECT MAX(s3.order_id) 
-					          FROM sales AS s3 
-					          WHERE s.sku = s3.sku
-					            AND s.date = s3.date
-					            AND s.status = s3.status)
+					FROM sales AS s3 
+					WHERE s.sku = s3.sku
+					  AND s.date = s3.date
+					  AND s.status = s3.status)
 
 --Q Why filter status before ranking? 
 --A TO ensure we are picking the order with the right status

@@ -265,10 +265,8 @@ FROM ordered_sales
 WHERE prev_order_date IS NOT NULL
   AND DATEDIFF(DAY, prev_order_date, Date) > 30;
 
-  --select top 10 * from sales where order_id in (
-  --select order_id from sales group by order_id having count(*) > 1) order by order_id
 
---MTHOD 2: INLINE WINDOWS FUNCTION
+--METHOD 2: INLINE WINDOWS FUNCTION
 --WHY: works in snowflake but not in sql server
 SELECT
   sku,
@@ -324,7 +322,7 @@ CROSS APPLY (
 WHERE s.status = 'Shipped - Delivered to Buyer'
   AND DATEDIFF(DAY, p.prev_date, s.date) > 30;
 
---Answer these explicitly:
+--Questions:
 
 --Q. What is the grain of the sales table?
 --A. The grain is order line level (order_id + sku). One order can contain multiple SKUs.

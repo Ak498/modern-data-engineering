@@ -243,31 +243,6 @@ WHERE sku_rank <= 3;
    ------------------------------------------------------------ */
 --METHOD 1: WINDOWS FUNCTION + CTE
 --WHY: Simple and short
-WITH ordered_sales AS (
-  SELECT
-    order_id
-    , sku
-    , fulfilment
-    , date
-    , MAX(date) OVER (
-        PARTITION BY sku 
-        ORDER BY date 
-        ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING 
-      ) AS prev_order_date
-  FROM sales
-  WHERE status = 'Shipped - Delivered to Buyer'
-)
-SELECT
-  sku
-  , order_id
-  , date
-  , DATEDIFF(DAY, prev_order_date, Date) AS gap_days
-FROM ordered_sales
-WHERE prev_order_date IS NOT NULL
-  AND DATEDIFF(DAY, prev_order_date, Date) > 30;
-
---METHOD 2: Using LAG 
---WHY: Comparable to method 1
 WITH UniqueDeliveredDates AS (
   SELECT DISTINCT 
 	sku
@@ -297,7 +272,7 @@ WHERE s.status = 'Shipped - Delivered to Buyer'
   AND g.prev_date IS NOT NULL
   AND DATEDIFF(DAY, g.prev_date, s.date) > 30;
 
---METHOD 3: 
+--METHOD 2: 
 --WHY: tricky but works nicely
 WITH numbered_orders AS (
   SELECT
@@ -322,7 +297,7 @@ INNER JOIN numbered_orders prev
   AND curr.rn = prev.rn + 1
 WHERE DATEDIFF(DAY, prev.date, curr.date) > 30;
 
---METHOD 4:CROSS APPLY (works only in sql server)
+--METHOD 3:CROSS APPLY (works only in sql server)
 --WHY: SHORT query and effective
 SELECT
   s.sku

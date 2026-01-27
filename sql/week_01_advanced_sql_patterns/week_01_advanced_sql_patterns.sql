@@ -249,9 +249,10 @@ WITH ordered_sales AS (
     , sku
     , fulfilment
     , date
-    , LAG(date) OVER (
-        PARTITION BY sku
-        ORDER BY date
+    , MAX(date) OVER (
+        PARTITION BY sku 
+        ORDER BY date 
+        ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING 
       ) AS prev_order_date
   FROM sales
   WHERE status = 'Shipped - Delivered to Buyer'
@@ -265,17 +266,36 @@ FROM ordered_sales
 WHERE prev_order_date IS NOT NULL
   AND DATEDIFF(DAY, prev_order_date, Date) > 30;
 
-
---METHOD 2: INLINE WINDOWS FUNCTION
---WHY: works in snowflake but not in sql server
-SELECT
-  sku,
-  , order_id
-  , date
-  , DATEDIFF( DAY, LAG(date) OVER (PARTITION BY sku ORDER BY date), date) AS gap_days
-FROM sales
-WHERE status = 'Shipped - Delivered to Buyer'
-QUALIFY DATEDIFF( DAY,LAG(date) OVER (PARTITION BY sku ORDER BY date), date) > 30;
+--METHOD 2: Using LAG 
+--WHY: Comparable to method 1
+WITH UniqueDeliveredDates AS (
+  SELECT DISTINCT 
+	sku
+	, date 
+  FROM sales 
+  WHERE status = 'Shipped - Delivered to Buyer'
+),
+DateGaps AS (
+  SELECT 
+	sku
+	, date
+	,  LAG(date) OVER (
+		 PARTITION BY sku 
+		 ORDER BY date) AS prev_date
+  FROM UniqueDeliveredDates
+)
+SELECT 
+  s.sku
+  , s.order_id
+  , s.date
+  , DATEDIFF(DAY, g.prev_date, s.date) AS gap_days
+FROM sales s
+JOIN DateGaps g 
+  ON s.sku = g.sku 
+  AND s.date = g.date
+WHERE s.status = 'Shipped - Delivered to Buyer'
+  AND g.prev_date IS NOT NULL
+  AND DATEDIFF(DAY, g.prev_date, s.date) > 30;
 
 --METHOD 3: 
 --WHY: tricky but works nicely

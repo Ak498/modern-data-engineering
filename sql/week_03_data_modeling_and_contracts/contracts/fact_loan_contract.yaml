@@ -1,0 +1,29 @@
+dataset: fact_loan
+grain: one row per loan_id
+
+required_fields:
+  - loan_id
+  - customer_id
+  - date_id
+  - loan_amount
+
+constraints:
+  loan_amount:
+    min: 0
+  interest_rate:
+    min: 0
+    max: 1
+  tenure_months:
+    min: 1
+
+sla:
+  freshness: daily
+  completeness: 99.9%
+
+change_policy:
+  breaking_changes:
+    - change in grain
+    - removal of required fields
+  non_breaking_changes:
+    - adding nullable columns
+

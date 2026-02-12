@@ -1,0 +1,29 @@
+dataset: fact_repayment
+grain: one row per repayment_id
+
+required_fields:
+  - repayment_id
+  - loan_id
+  - date_id
+  - repayment_amount
+
+constraints:
+  repayment_amount:
+    min: 0
+  principal_component:
+    min: 0
+  interest_component:
+    min: 0
+  penalty_amount:
+    min: 0
+
+sla:
+  freshness: daily
+  completeness: 99.9%
+
+change_policy:
+  breaking_changes:
+    - change in grain
+    - removal of required fields
+  non_breaking_changes:
+    - adding nullable columns

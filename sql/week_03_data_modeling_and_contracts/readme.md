@@ -18,7 +18,7 @@ The design follows a **star schema** with conformed dimensions and fact tables f
   - `dim_date`: Calendar dimension keyed by `date_id` (day, month, year, quarter, weekend flag).
   - `dim_medium`: Channel/medium used (e.g. branch, mobile, web).
 
--- **Facts**
+- **Facts**
   - `fact_loan`
     - Grain: **one row per loan_id**.
     - Keys: `loan_id`, `customer_id`, `employee_id`, `date_id`, `medium_id`.

@@ -1,6 +1,6 @@
-# KPI Definitions — Loan Portfolio Analytics
+# KPI Definitions — Loan Portfolio Analytics (Tier 1 & 2)
 
-This document defines the Key Performance Indicators (KPIs) for the loan portfolio analytics use case. All metrics support **rolling windows** (7-day, 30-day, 90-day) and handle **late-arriving data**.
+This document defines the 22 Key Performance Indicators (KPIs) for the loan portfolio analytics use case. All metrics support **rolling windows** (7-day, 30-day, 90-day) and handle **late-arriving data**.
 
 ---
 
@@ -148,100 +148,11 @@ This document defines the Key Performance Indicators (KPIs) for the loan portfol
 **Rolling Windows:** 30d, 90d  
 **Business Use:** Customer engagement metric
 
-### 22. Full Repayment Rate
-**Definition:** Percentage of loans fully repaid  
-**Formula:** `(fully_repaid_loans / total_loans) * 100`  
-**Calculation:** Loans where `SUM(principal_component) >= loan_amount`  
-**Rolling Windows:** 90d, 180d  
-**Business Use:** Completion rate
-
-### 23. Partial Repayment Rate
-**Definition:** Percentage of loans with partial repayments  
-**Formula:** `(partially_repaid_loans / total_loans) * 100`  
-**Calculation:** Loans where `0 < SUM(principal_component) < loan_amount`  
-**Rolling Windows:** 30d, 90d  
-**Business Use:** Payment behavior insight
-
-### 24. Average Repayment Amount
+### 23. Average Repayment Amount
 **Definition:** Mean `repayment_amount` per transaction  
 **Formula:** `AVG(repayment_amount)`  
 **Rolling Windows:** 7d, 30d, 90d  
 **Business Use:** Payment size trends
-
-### 25. Repayment Frequency
-**Definition:** Average number of repayments per loan  
-**Formula:** `AVG(repayment_count_per_loan)`  
-**Rolling Windows:** 30d, 90d  
-**Business Use:** Payment pattern analysis
-
----
-
-## 📅 TIME-BASED KPIs (Rolling Windows)
-
-### 26. Rolling 7-Day Loan Originations
-**Definition:** Loans originated in the last 7 days  
-**Formula:** `COUNT(DISTINCT loan_id) WHERE origination_date >= today - 7 days`  
-**Business Use:** Short-term trend monitoring
-
-### 27. Rolling 30-Day Loan Originations
-**Definition:** Loans originated in the last 30 days  
-**Formula:** `COUNT(DISTINCT loan_id) WHERE origination_date >= today - 30 days`  
-**Business Use:** Monthly performance tracking
-
-### 28. Rolling 90-Day Loan Originations
-**Definition:** Loans originated in the last 90 days  
-**Formula:** `COUNT(DISTINCT loan_id) WHERE origination_date >= today - 90 days`  
-**Business Use:** Quarterly trend analysis
-
-### 29. Rolling 30-Day Repayment Collection
-**Definition:** Total repayments collected in the last 30 days  
-**Formula:** `SUM(repayment_amount) WHERE repayment_date >= today - 30 days`  
-**Business Use:** Monthly cash flow
-
-### 30. Rolling 7-Day Delinquency Rate
-**Definition:** Delinquency rate calculated over the last 7 days  
-**Formula:** `(new_delinquencies_last_7d / active_loans_last_7d) * 100`  
-**Business Use:** Early warning system
-
----
-
-## 🎯 CUSTOMER KPIs
-
-### 31. Average Loans per Customer
-**Definition:** Mean number of loans per customer  
-**Formula:** `AVG(loan_count_per_customer)`  
-**Rolling Windows:** 30d, 90d  
-**Business Use:** Customer loyalty/retention
-
-### 32. Repeat Customer Rate
-**Definition:** Percentage of customers with multiple loans  
-**Formula:** `(customers_with_multiple_loans / total_customers) * 100`  
-**Rolling Windows:** 90d, 180d  
-**Business Use:** Customer retention metric
-
-### 33. Customer Lifetime Value (CLV)
-**Definition:** Total revenue (interest + penalties) per customer  
-**Formula:** `SUM(interest_component + penalty_amount) GROUP BY customer_id`  
-**Business Use:** Customer profitability
-
----
-
-## 📋 DATA QUALITY & COMPLETENESS KPIs
-
-### 34. Data Freshness (SLA)
-**Definition:** Days since last loan origination  
-**Formula:** `DATEDIFF(day, MAX(origination_date), today)`  
-**Business Use:** Data pipeline health check
-
-### 35. Late-Arriving Data Impact
-**Definition:** Count of repayments loaded after their expected period  
-**Formula:** `COUNT(*) WHERE repayment_date < load_date - 1 day`  
-**Business Use:** Data quality monitoring
-
-### 36. Missing Payment Records
-**Definition:** Count of expected payments with no corresponding record  
-**Formula:** `COUNT(*) WHERE expected_payment_date < today AND no_payment_exists`  
-**Business Use:** Data completeness check
 
 ---
 
@@ -264,19 +175,21 @@ This document defines the Key Performance Indicators (KPIs) for the loan portfol
 
 ---
 
-## 📊 RECOMMENDED DASHBOARD LAYOUT
+## 📊 DASHBOARD LAYOUT
 
 ### Executive Dashboard
 - Total Loan Originations (30d)
 - Outstanding Loan Balance
 - Delinquency Rate
 - Collection Rate
+- Non-Performing Loans (NPL) Rate
 
 ### Operational Dashboard
 - Loans by Channel (30d)
 - Loans by Branch (30d)
 - Late Payment Rate (30d)
 - Average Days Past Due
+- At-Risk Loans Count
 
 ### Risk Dashboard
 - Non-Performing Loans Rate
@@ -289,6 +202,7 @@ This document defines the Key Performance Indicators (KPIs) for the loan portfol
 - Interest Collected (30d)
 - Penalty Revenue (30d)
 - Collection Rate (30d)
+- Principal Collected (30d)
 
 ---
 
@@ -304,5 +218,5 @@ Each KPI should be validated with:
 
 **Last Updated:** 2024  
 **Data Coverage:** 2024-01-05 to 2024-03-20  
-**Rolling Windows Supported:** 7d, 30d, 90d
-
+**Rolling Windows Supported:** 7d, 30d, 90d  
+**KPI Count:** 22 (Tier 1 & 2 only)

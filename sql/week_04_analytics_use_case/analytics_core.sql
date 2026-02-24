@@ -1,243 +1,162 @@
-WITH loan_base AS (
-  SELECT
-      l.loan_id
-    , d.full_date AS origination_date
-    , l.loan_amount
-    , l.interest_rate
-    , l.medium_id
-    , l.employee_id
-    , l.customer_id
-  FROM fact_loan l
-  JOIN dim_date d
-    ON l.origination_date_id = d.date_id
-)
-
-, repayment_base AS (
-  SELECT
-      r.loan_id
-    , d.full_date AS repayment_date
-    , r.repayment_amount
-    , r.principal_component
-    , r.interest_component
-    , r.penalty_amount
-  FROM fact_repayment r
-  JOIN dim_date d
-    ON r.repayment_date_id = d.date_id
-)
-
-, repayment_agg AS (
-  SELECT
-      loan_id
-    , SUM(principal_component) AS total_principal_repaid
-    , SUM(repayment_amount) AS total_repaid
-    , MAX(repayment_date) AS last_payment_date
-  FROM repayment_base
-  GROUP BY loan_id
-)
-
--- 🔽 All KPI SELECT statements go below
---PORTFOLIO HEALTH KPIs
-
--- 1. Total Loan Originations (30d)
-SELECT
-    COUNT(DISTINCT loan_id) AS total_loans_originated
-FROM loan_base
-WHERE origination_date >= DATEADD(day, -29, GETDATE());
-
--- 2. Total Loan Amount Originated
-SELECT
-    SUM(loan_amount) AS total_loan_amount_originated
-FROM loan_base    
-WHERE origination_date >= DATEADD(day, -29, GETDATE());
-
--- 3. Average Loan Size (30d)
-SELECT
-    AVG(loan_amount) AS average_loan_size
-FROM loan_base
-WHERE origination_date >= DATEADD(day, -29, GETDATE());
-
--- 4. Outstanding Loan Balance
-SELECT
-    SUM(loan_amount) - SUM(COALESCE(total_principal_repaid, 0)) AS outstanding_loan_balance
-FROM loan_base
-LEFT JOIN repayment_agg
-  ON loan_base.loan_id = repayment_agg.loan_id;
-
--- 5. Portfolio Size (Active Loans)
-SELECT
-    COUNT(DISTINCT loan_id) AS portfolio_size
-FROM loan_base
-WHERE loan_amount > total_principal_repaid;
-
--- FINANCIAL PERFORMANCE KPIs
--- 6. Total Repayments Collected(30d)
-SELECT
-    SUM(repayment_amount) AS total_repayments_collected
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());
-
--- 7. Principal Collected
-SELECT
-    SUM(principal_component) AS total_principal_collected
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());
-
--- 8. Interest Collected(30d)
-SELECT
-    SUM(interest_component) AS total_interest_collected
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());
-
--- 9. Penalty Revenue(30d)
-SELECT
-    SUM(penalty_amount) AS total_penalty_revenue
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());
-
--- 10. Collection Rate
-SELECT
-    (SUM(repayment_amount) / SUM(loan_amount)) * 100 AS collection_rate
-FROM repayment_base
-LEFT JOIN loan_base
-  ON repayment_base.loan_id = loan_base.loan_id;
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());
-
---RISK KPIs
-
--- 11. Delinquency Rate
-SELECT
-    (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS delinquency_rate
-FROM loan_base
-LEFT JOIN repayment_agg
-  ON loan_base.loan_id = repayment_agg.loan_id
-WHERE repayment_agg.last_payment_date < DATEADD(day, -90, GETDATE());
-
--- 12. Late Payment Rate
-SELECT
-    (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS late_payment_rate
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE())
-AND penalty_amount > 0;
-
--- 13. Average Days Past Due (DPD)
-SELECT
-    AVG(DATEDIFF(day, repayment_date, GETDATE())) AS average_days_past_due
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE())
-AND penalty_amount > 0;
-
--- 14. Non-Performing Loans (NPL) Rate
-SELECT
-    (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS npl_rate
-FROM loan_base
-LEFT JOIN repayment_agg
-  ON loan_base.loan_id = repayment_agg.loan_id
-WHERE repayment_agg.last_payment_date < DATEADD(day, -90, GETDATE());
-
--- 15. At-Risk Loans
-SELECT
-    COUNT(DISTINCT loan_id) AS at_risk_loans
-FROM loan_base
-WHERE loan_amount > total_principal_repaid;
 
 /*
--- RISK & DELINQUENCY KPIs
+  Model: analytics.vw_portfolio_daily
+  Grain: 1 row per calendar date
 
--- 16. Delinquency Rate by Risk Segment
-SELECT
-    risk_segment
-    , COUNT(DISTINCT loan_id) AS delinquent_loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS delinquency_rate
-FROM loan_base
-LEFT JOIN repayment_agg
-  ON loan_base.loan_id = repayment_agg.loan_id
-WHERE repayment_agg.last_payment_date < DATEADD(day, -90, GETDATE());
-GROUP BY risk_segment;
-
--- 17. At-Risk Loans by Risk Segment
-SELECT
-    risk_segment
-    , COUNT(DISTINCT loan_id) AS at_risk_loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS at_risk_rate
-FROM loan_base
-LEFT JOIN repayment_agg
-  ON loan_base.loan_id = repayment_agg.loan_id
-WHERE loan_amount > total_principal_repaid;
-GROUP BY risk_segment;
-
--- 18. Average DPD by Risk Segment
-SELECT
-    risk_segment
-    , AVG(DATEDIFF(day, repayment_date, GETDATE())) AS average_days_past_due
-FROM repayment_base
-LEFT JOIN loan_base
-  ON repayment_base.loan_id = loan_base.loan_id
-WHERE repayment_date >= DATEADD(day, -29, GETDATE())
-AND penalty_amount > 0;
-GROUP BY risk_segment;
+  Rules enforced:
+  1) Aggregate first, then join (prevents loan amount multiplication)
+  2) Percentages use numerator * 1.0 / NULLIF(denominator, 0) * 100
 */
 
--- OPERATIONAL KPIs
-
--- 19. Loans by Channel (Medium)
+CREATE OR ALTER VIEW analytics.vw_portfolio_daily
+AS
+WITH loan_base AS (
+    SELECT
+          fl.loan_id
+        , dd.date_id AS origination_date_id
+        , dd.full_date AS origination_date
+        , fl.loan_amount
+    FROM fact_loan AS fl
+    JOIN dim_date AS dd
+        ON fl.date_id = dd.date_id
+),
+repayment_base AS (
+    SELECT
+          fr.loan_id
+        , dd.date_id AS repayment_date_id
+        , dd.full_date AS repayment_date
+        , fr.repayment_amount
+        , fr.principal_component
+    FROM fact_repayment AS fr
+    JOIN dim_date AS dd
+        ON fr.date_id = dd.date_id
+),
+calendar AS (
+    SELECT
+          d.date_id
+        , d.full_date
+    FROM dim_date AS d
+    WHERE d.full_date >= (SELECT MIN(origination_date) FROM loan_base)
+      AND d.full_date <= CAST(GETDATE() AS DATE)
+),
+originations_daily AS (
+    SELECT
+          lb.origination_date_id AS date_id
+        , COUNT(DISTINCT lb.loan_id) AS loans_originated
+        , SUM(lb.loan_amount) AS loan_amount_originated
+    FROM loan_base AS lb
+    GROUP BY
+        lb.origination_date_id
+),
+repayments_daily AS (
+    SELECT
+          rb.repayment_date_id AS date_id
+        , SUM(rb.repayment_amount) AS repayments_collected
+        , SUM(rb.principal_component) AS principal_collected
+    FROM repayment_base AS rb
+    GROUP BY
+        rb.repayment_date_id
+),
+repayment_daily_by_loan AS (
+    SELECT
+          rb.loan_id
+        , rb.repayment_date_id AS date_id
+        , SUM(rb.principal_component) AS principal_collected_loan_day
+    FROM repayment_base AS rb
+    GROUP BY
+          rb.loan_id
+        , rb.repayment_date_id
+),
+loan_calendar AS (
+    SELECT
+          c.date_id
+        , c.full_date
+        , lb.loan_id
+        , lb.loan_amount
+        , lb.origination_date
+    FROM calendar AS c
+    JOIN loan_base AS lb
+        ON lb.origination_date <= c.full_date
+),
+loan_state_daily AS (
+    SELECT
+          lc.date_id
+        , lc.full_date
+        , lc.loan_id
+        , lc.loan_amount
+        , lc.origination_date
+        , COALESCE(rdl.principal_collected_loan_day, 0.0) AS principal_collected_loan_day
+        , SUM(COALESCE(rdl.principal_collected_loan_day, 0.0)) OVER (
+              PARTITION BY lc.loan_id
+              ORDER BY lc.full_date
+              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS principal_collected_to_date
+        , MAX(CASE WHEN rdl.principal_collected_loan_day IS NOT NULL THEN lc.full_date END) OVER (
+              PARTITION BY lc.loan_id
+              ORDER BY lc.full_date
+              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS last_repayment_date_to_date
+    FROM loan_calendar AS lc
+    LEFT JOIN repayment_daily_by_loan AS rdl
+        ON lc.loan_id = rdl.loan_id
+       AND lc.date_id = rdl.date_id
+),
+portfolio_state_daily AS (
+    SELECT
+          lsd.date_id
+        , SUM(lsd.loan_amount - lsd.principal_collected_to_date) AS outstanding_balance
+        , COUNT(DISTINCT CASE
+              WHEN lsd.loan_amount - lsd.principal_collected_to_date > 0 THEN lsd.loan_id
+          END) AS active_loans
+        , COUNT(DISTINCT CASE
+              WHEN lsd.loan_amount - lsd.principal_collected_to_date > 0
+               AND COALESCE(lsd.last_repayment_date_to_date, lsd.origination_date) < DATEADD(DAY, -90, lsd.full_date)
+              THEN lsd.loan_id
+          END) AS delinquent_loans
+    FROM loan_state_daily AS lsd
+    GROUP BY
+        lsd.date_id
+),
+portfolio_with_pct AS (
+    SELECT
+          psd.date_id
+        , psd.outstanding_balance
+        , psd.active_loans
+        , psd.delinquent_loans
+        , psd.delinquent_loans * 1.0 / NULLIF(psd.active_loans, 0) * 100 AS delinquency_rate_pct
+    FROM portfolio_state_daily AS psd
+),
+daily_base AS (
+    SELECT
+          c.date_id
+        , c.full_date
+        , COALESCE(od.loans_originated, 0) AS loans_originated
+        , COALESCE(od.loan_amount_originated, 0.0) AS loan_amount_originated
+        , COALESCE(rd.repayments_collected, 0.0) AS repayments_collected
+        , COALESCE(rd.principal_collected, 0.0) AS principal_collected
+        , COALESCE(pwp.outstanding_balance, 0.0) AS outstanding_balance
+        , COALESCE(pwp.active_loans, 0) AS active_loans
+        , COALESCE(pwp.delinquent_loans, 0) AS delinquent_loans
+        , COALESCE(pwp.delinquency_rate_pct, 0.0) AS delinquency_rate_pct
+    FROM calendar AS c
+    LEFT JOIN originations_daily AS od
+        ON c.date_id = od.date_id
+    LEFT JOIN repayments_daily AS rd
+        ON c.date_id = rd.date_id
+    LEFT JOIN portfolio_with_pct AS pwp
+        ON c.date_id = pwp.date_id
+)
 SELECT
-    medium_name
-    , COUNT(DISTINCT loan_id) AS loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS loan_rate
-FROM loan_base
-LEFT JOIN dim_medium
-  ON loan_base.medium_id = dim_medium.medium_id;
+      db.date_id
+    , db.full_date
+    , db.loans_originated
+    , db.loan_amount_originated
+    , db.repayments_collected
+    , db.principal_collected
+    , db.outstanding_balance
+    , db.active_loans
+    , db.delinquent_loans
+    , db.delinquency_rate_pct
+    , db.repayments_collected * 1.0 / NULLIF(db.loan_amount_originated, 0.0) * 100 AS same_day_collection_rate_pct
+FROM daily_base AS db;
 
--- 20. Loans by Employee
-SELECT
-    employee_code
-    , branch
-    , COUNT(DISTINCT loan_id) AS loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS loan_rate
-FROM loan_base
-LEFT JOIN dim_employee
-  ON loan_base.employee_id = dim_employee.employee_id;
-
--- 21. Loans by Branch  
-SELECT
-    branch
-    , COUNT(DISTINCT loan_id) AS loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS loan_rate
-FROM loan_base
-LEFT JOIN dim_employee
-  ON loan_base.employee_id = dim_employee.employee_id;
-
--- 22. Loans by Risk Segment
-SELECT
-    risk_segment
-    , COUNT(DISTINCT loan_id) AS loans
-    , (COUNT(DISTINCT loan_id) / COUNT(DISTINCT loan_id)) * 100 AS loan_rate  
-FROM loan_base
-LEFT JOIN dim_customer
-  ON loan_base.customer_id = dim_customer.customer_id;
-
--- 23. Average Interest Rate by Segment
-SELECT
-    risk_segment
-    , AVG(interest_rate) AS average_interest_rate
-FROM loan_base
-LEFT JOIN dim_customer
-  ON loan_base.customer_id = dim_customer.customer_id;
-
--- REPAYMENT BEHAVIOR KPIs
-
--- 24. Repayment Rate (Loans With >=1 Repayment)
-SELECT
-    COUNT(DISTINCT r.loan_id) * 1.0
-  / COUNT(DISTINCT l.loan_id) * 100 AS repayment_rate
-FROM loan_base l
-LEFT JOIN repayment_base r
-  ON l.loan_id = r.loan_id
-WHERE origination_date >= DATEADD(day, -90, GETDATE());
-
-
--- 25. Average Repayment Amount(30d)
-SELECT
-    AVG(repayment_amount) AS average_repayment_amount 
-FROM repayment_base
-WHERE repayment_date >= DATEADD(day, -29, GETDATE());

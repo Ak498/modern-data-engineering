@@ -1,0 +1,17 @@
+paths:
+  raw_directory: "data/raw/*"
+  processed_directory: "data/processed/*"
+  archive_directory: "data/archive/*"
+
+logging:
+  level: INFO
+  log_file: logs/pipeline.log
+
+validation:
+  allowed_risk_segments:
+    - Low
+    - Medium
+    - High
+
+pipeline:
+  file_pattern: "loans_*.csv"

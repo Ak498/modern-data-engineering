@@ -9,11 +9,6 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-# read config.yaml
-with open('config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-    raw_directory = config['paths']['raw_directory']
-
 # ingest data from a source
 def ingest(raw_directory: str) -> dict:
     """

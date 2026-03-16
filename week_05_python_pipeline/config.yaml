@@ -1,7 +1,7 @@
 paths:
-  raw_directory: "data/raw/*"
-  processed_directory: "data/processed/*"
-  archive_directory: "data/archive/*"
+  raw_directory: "data/raw"
+  processed_directory: "data/processed"
+  archive_directory: "data/archive"
 
 logging:
   level: INFO

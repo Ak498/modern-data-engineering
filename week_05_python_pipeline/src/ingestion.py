@@ -1,39 +1,34 @@
-import os
-import sys
 import logging
-import time
-import json 
+from pathlib import Path
 
 import pandas as pd
-import yaml
 
 logger = logging.getLogger(__name__)
 
-# ingest data from a source
-def ingest(raw_directory: str) -> dict:
+def ingest(file_path: str | Path) -> pd.DataFrame:
     """
-    Reads all CSV files in a specified directory and loads each into a pandas DataFrame.
+    Reads a single CSV file into a pandas DataFrame.
+
     Args:
-        raw_directory: The path to the directory containing CSV files.
+        file_path: The path to the CSV file.
+
     Returns:
-        A dictionary where keys are file names and values are pandas DataFrames containing the data.
+        A pandas DataFrame containing the file data.
     """
-    logger.info(f'Ingesting all CSV files from directory: {raw_directory}')
-    dataframes = {}
+    csv_path = Path(file_path)
+
+    if csv_path.suffix.lower() != ".csv":
+        raise ValueError(f"Expected a CSV file, got: {csv_path}")
+
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Input file not found: {csv_path}")
+
+    logger.info("Ingesting data from %s", csv_path)
+
     try:
-        for filename in os.listdir(raw_directory):
-            if filename.lower().endswith('.csv'):
-                file_path = os.path.join(raw_directory, filename)
-                logger.info(f'Ingesting data from {file_path}')
-                try:
-                    df = pd.read_csv(file_path)
-                    dataframes[filename] = df
-                    logger.info(f'Data ingested successfully from {file_path}')
-                except Exception as e_file:
-                    logger.error(f'Error ingesting data from {file_path}: {e_file}')
-        return dataframes
+        df = pd.read_csv(csv_path)
+        logger.info("Data ingested successfully from %s", csv_path)
+        return df
     except Exception as e:
-        logger.error(f'Error accessing directory {raw_directory}: {e}')
-        raise e
-
-
+        logger.error("Error ingesting data from %s: %s", csv_path, e)
+        raise

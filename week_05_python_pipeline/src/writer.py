@@ -1,8 +1,13 @@
-def write_output(df, config):
+from pathlib import Path
 
-  output_dir = config["paths"]["processed_dir"]
+
+def write_output(df, config, source_file_name):
+
+  output_dir = Path(config["paths"]["processed_directory"])
+  output_dir.mkdir(parents=True, exist_ok=True)
+  output_file = output_dir / f"{Path(source_file_name).stem}.parquet"
 
   df.to_parquet(
-      f"{output_dir}/loans.parquet",
+      output_file,
       index=False
   )

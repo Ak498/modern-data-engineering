@@ -1,33 +1,50 @@
 import logging
-from week_05_python_pipelinesrc.ingestion import ingest
-from week_05_python_pipeline.src. validate import validate_schema
-from week_05_python_pipeline.src.transform import transform_data
-from week_05_python_pipeline.src.writer import write_parquet
-from week_05_python_pipeline.src.logging_config import setup_logger
+from pathlib import Path
+
 import yaml
-import os
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-logger = logging.getLogger(__name__)
+from week_05_python_pipeline.src.ingestion import ingest
+from week_05_python_pipeline.src.validation import validate_schema
+from week_05_python_pipeline.src.transform import transform_data
+from week_05_python_pipeline.src.writer import write_output
+from week_05_python_pipeline.src.logging_config import setup_logger
+BASE_DIR = Path(__file__).resolve().parent
+PIPELINE_DIR = BASE_DIR / "week_05_python_pipeline"
+CONFIG_PATH = PIPELINE_DIR / "config.yaml"
 
-# read config.yaml
-with open(os.path.join(os.path.dirname(__file__), 'week_05_python_pipeline', 'config.yaml'), 'r') as f:
-    config = yaml.safe_load(f)
-    raw_directory = config['paths']['raw_directory']
+
+def load_config():
+    with CONFIG_PATH.open("r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+
+    for key, value in config["paths"].items():
+        config["paths"][key] = (PIPELINE_DIR / value).resolve()
+
+    return config
+
 
 def main():
+    config = load_config()
+    setup_logger()
+    logger = logging.getLogger("pipeline")
 
-  df_dict = ingest(raw_directory)
+    raw_directory = config["paths"]["raw_directory"]
+    file_pattern = config["pipeline"]["file_pattern"]
+    csv_files = sorted(raw_directory.glob(file_pattern))
 
-  for df in df_dict.values(): # validate each dataframe in the dictionary 
-    validate_schema(df) # validate the schema of the dataframe
-    df_clean = transform_data(df) # transform the dataframe
-    # df_clean = validate_data(df_clean) # validate the data of the dataframe
-    write_parquet(df_clean, config)
-  # archive_data(df_dict) # archive the data    
-    
-  logger.info("Pipeline completed successfully")
+    if not csv_files:
+        logger.warning("No CSV files found in %s (pattern=%s)", raw_directory, file_pattern)
+        return
+
+    for csv_file in csv_files:
+        logger.info("Starting ETL for %s", csv_file.name)
+        df = ingest(csv_file)
+        df_clean = transform_data(df)
+        validate_schema(df_clean)
+        write_output(df_clean, config, csv_file.name)
+        logger.info("Completed ETL for %s", csv_file.name)
+
+    logger.info("Pipeline completed successfully")
 
 if __name__ == "__main__":
     main()

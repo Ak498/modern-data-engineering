@@ -1,15 +1,24 @@
 # modern-data-engineering
 
-This repository documents my hands-on learning and practice across
-modern data engineering concepts, tools, and patterns, with a focus on
-production-ready thinking and real-world tradeoffs.
+A collection of end-to-end data engineering examples and reusable patterns I’ve built, focused on practical ETL/ELT design: ingestion, validation, transformations, and analytics-ready outputs. The goal is to demonstrate production-minded tradeoffs—data quality, reliability, and maintainability—rather than isolated scripts.
 
-The work here emphasizes:
+## Highlights
+- ETL pipeline refactor (ingestion → validation → outputs)
+- SQL optimization and analytics engineering patterns
+- Data modeling concepts (grain, facts/dimensions) and transformation practices
+- Monitoring, data quality checks, and pipeline reliability patterns
+
+## Start here
+- `week_05_python_pipeline/` — end-to-end Python ETL pipeline example (recommended entry point)
+- `sql/` — SQL patterns, views, and rolling metrics
+- `performance/Week_02/` — optimization exercises and performance notes
+
+## What this repo demonstrates
 - Correctness and data grain awareness
-- Scalable SQL and analytics engineering
-- Data modeling and transformations (dbt)
-- Distributed processing and orchestration
-- Infrastructure as Code and cloud fundamentals
-- Data governance, security, and cost optimization
+- Scalable SQL and analytics engineering practices
+- Data modeling and transformations
+- Orchestration and automation patterns
+- Cloud fundamentals and Microsoft-friendly BI outputs (BI-ready datasets)
 
-The repository evolves over time as new topics and projects are added.
+## Notes
+This repo evolves over time as I add new projects and patterns. For a quick review, start with `week_05_python_pipeline/`.

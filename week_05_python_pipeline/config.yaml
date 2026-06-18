@@ -14,4 +14,4 @@ validation:
     - High
 
 pipeline:
-  file_pattern: "loans_*.csv"
+  file_pattern: "loan*_*.csv"

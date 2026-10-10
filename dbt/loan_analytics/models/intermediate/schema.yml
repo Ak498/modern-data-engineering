@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: int_loan_summary
+    description: >-
+      One row per loan with repayment activity, principal tracking, and the
+      estimated outstanding balance after principal repayments.
+    columns:
+      - name: loan_id
+        description: Unique loan identifier.
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Lending customer tied to the loan.
+        tests:
+          - not_null
+      - name: origination_date
+        description: Date the loan was originated.
+        tests:
+          - not_null
+      - name: loan_amount
+        description: Original loan principal.
+        tests:
+          - not_null
+      - name: repayment_count
+        description: Number of repayment events recorded for the loan.
+        tests:
+          - not_null
+      - name: total_repayments
+        description: Total repayment amount received for the loan.
+        tests:
+          - not_null
+      - name: principal_repaid
+        description: Total principal repaid over the life of the loan.
+        tests:
+          - not_null
+      - name: outstanding_balance
+        description: Remaining balance after principal repayments.
+        tests:
+          - not_null

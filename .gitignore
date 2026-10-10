@@ -1,0 +1,8 @@
+# Local dbt / DuckDB artifacts
+*.duckdb
+dev.duckdb
+dbt/loan_analytics/dev.duckdb
+
+# Python cache
+__pycache__/
+.venv/

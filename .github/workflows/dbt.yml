@@ -1,0 +1,31 @@
+name: dbt build
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install project dependencies
+        run: uv sync --python 3.14
+
+      - name: Run dbt build
+        run: uv run dbt build --project-dir dbt/loan_analytics --profiles-dir dbt/loan_analytics

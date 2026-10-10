@@ -1,0 +1,107 @@
+version: 2
+
+models:
+  - name: fct_loan_performance
+    description: >-
+      One row per loan with principal, repayment, and outstanding balance
+      metrics summarised from the staged loan and repayment data.
+    columns:
+      - name: loan_id
+        description: Unique loan identifier.
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Customer associated with the loan.
+        tests:
+          - not_null
+      - name: origination_date
+        description: Date the loan began.
+        tests:
+          - not_null
+      - name: loan_amount
+        description: Original loan principal amount.
+        tests:
+          - not_null
+      - name: principal_repaid
+        description: Total principal component repaid across the loan.
+        tests:
+          - not_null
+      - name: total_repayments
+        description: Aggregate repayment amount received for the loan.
+        tests:
+          - not_null
+      - name: outstanding_balance
+        description: Remaining balance after principal repayments.
+        tests:
+          - not_null
+
+  - name: mart_daily_portfolio
+    description: >-
+      Daily portfolio snapshot with originated volume, repayments collected,
+      and outstanding balance by date.
+    columns:
+      - name: date_day
+        description: Calendar date for the portfolio snapshot.
+        tests:
+          - not_null
+          - unique
+      - name: loans_originated
+        description: Count of loans originated on the date.
+        tests:
+          - not_null
+      - name: total_loan_amount
+        description: Total principal originated on the date.
+        tests:
+          - not_null
+      - name: total_repayments
+        description: Total repayment amount received on the date.
+        tests:
+          - not_null
+      - name: principal_collected
+        description: Principal portion received on the date.
+        tests:
+          - not_null
+      - name: outstanding_balance
+        description: Estimated outstanding balance as of the date.
+        tests:
+          - not_null
+
+  - name: mart_portfolio_kpis
+    description: >-
+      Portfolio-level KPI snapshot produced from the intermediate loan summary.
+      This model summarises the current state of loan origination, repayment, and
+      outstanding balance performance for the portfolio.
+    columns:
+      - name: total_loans
+        description: Total number of loans in scope.
+        tests:
+          - not_null
+      - name: total_loan_amount_originated
+        description: Total principal originated across the portfolio.
+        tests:
+          - not_null
+      - name: average_loan_size
+        description: Average loan size across the portfolio.
+        tests:
+          - not_null
+      - name: total_repayments_collected
+        description: Total repayment amount collected across the portfolio.
+        tests:
+          - not_null
+      - name: total_principal_repaid
+        description: Total principal repaid from all loans.
+        tests:
+          - not_null
+      - name: outstanding_balance
+        description: Current total outstanding balance remaining across active loans.
+        tests:
+          - not_null
+      - name: active_loans
+        description: Number of loans with a remaining balance.
+        tests:
+          - not_null
+      - name: loans_without_repayments
+        description: Count of loans with an outstanding balance and no repayments.
+        tests:
+          - not_null

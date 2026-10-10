@@ -1,10 +1,10 @@
 # Reviewer handoff
 
 ## Project summary
-This repository shows a complete analytics-engineering workflow for a loan portfolio dataset. It combines SQL modeling, dbt implementation, validation logic, CI automation, and a documented AI-assisted engineering process.
+This repository shows a focused analytics-engineering workflow for a loan portfolio use case. It combines SQL modeling, dbt implementation, validation logic, CI automation, and a documented AI-assisted engineering process.
 
 ## What to highlight
-- The business problem is concrete and realistic: loan origination, repayment tracking, and portfolio health.
+- The use case is realistic: loan origination, repayment tracking, and portfolio health.
 - The project uses a staged transformation model with clear separation between source, intermediate logic, and marts.
 - Data quality is treated as a first-class engineering concern through dbt tests and business assertions.
 - CI ensures the project remains reproducible and testable on every change.
@@ -17,7 +17,7 @@ The current project build passes successfully:
 uv run dbt build --project-dir dbt\loan_analytics --profiles-dir dbt\loan_analytics
 ```
 
-Result: 57 passing tests, 0 warnings, 0 errors.
+Result: 59 dbt nodes passed, including 51 data tests, with 0 warnings and 0 errors.
 
 ## Recommended framing
 When presenting the project, describe it as a production-minded analytics engineering portfolio piece that combines data modeling, quality checks, and automation in a single business use case.

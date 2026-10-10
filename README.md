@@ -13,15 +13,18 @@ uv run dbt build --project-dir dbt\loan_analytics --profiles-dir dbt\loan_analyt
 ```
 
 ## Project story
-The repo starts from a real business problem: how to model loan origination, repayment behavior, and portfolio health in a way that is understandable to analysts and robust enough for downstream reporting.
+The repo explores a realistic loan portfolio use case: modeling loan origination, repayment behavior, and portfolio health in a way that is understandable to analysts and robust enough for downstream reporting.
 
 The progression is:
 - SQL and modeling foundations
 - dimensional modeling and validation logic
 - KPI definitions and portfolio analytics
+- Python ingestion and validation pipeline
 - dbt implementation for staging, intermediate logic, and marts
 - automated build validation in CI
 - AI-assisted engineering case study documenting a real workflow
+
+This README describes the work implemented so far. Later roadmap stages, including Docker, Airflow, infrastructure as code, cloud services, and Spark, remain planned rather than implemented.
 
 ## Repository layout
 - `week_05_python_pipeline/` - ETL pipeline context and ingestion/validation concepts
@@ -50,7 +53,7 @@ The progression is:
 - Automated verification for production-minded quality control
 
 ## Reviewer handoff
-This project is designed to show a complete analytics-engineering workflow rather than a set of disconnected examples. The main value is that the business logic is explicit, testable, and validated repeatedly. It demonstrates how a team can move from raw financial event data to trusted portfolio metrics using a staged dbt architecture and strong data quality controls.
+This project shows a focused analytics-engineering workflow for loan portfolio data rather than a set of disconnected examples. The main value is that the business logic is explicit, testable, and validated repeatedly. It demonstrates how a team can move from raw financial event data to trusted portfolio metrics using a staged dbt architecture and strong data quality controls.
 
 ## Current verification status
 The dbt project is validated with:
@@ -59,7 +62,7 @@ The dbt project is validated with:
 uv run dbt build --project-dir dbt\loan_analytics --profiles-dir dbt\loan_analytics
 ```
 
-This currently passes with fresh evidence: 57 dbt nodes succeeded, including 49 data tests, 0 warnings, 0 errors.
+The latest local build passed: 59 dbt nodes succeeded, including 51 data tests, with 0 warnings and 0 errors.
 
 ## Notes
 This repository is meant to read as a cohesive portfolio project rather than a set of isolated exercises. The common thread is trusted analytics design: making business logic clear, testable, automated, and explainable.

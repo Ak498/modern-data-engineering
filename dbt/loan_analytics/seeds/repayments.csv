@@ -1,0 +1,5 @@
+repayment_id,loan_id,payment_date,repayment_amount,principal_component,interest_component,penalty_amount
+R001,L001,2024-02-01,1200.00,1000.00,200.00,0.00
+R002,L001,2024-02-15,1100.00,900.00,200.00,0.00
+R003,L002,2024-03-05,2000.00,1800.00,200.00,0.00
+R004,L003,2024-03-20,1700.00,1500.00,200.00,0.00

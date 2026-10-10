@@ -1,0 +1,5 @@
+version: 2
+
+# This demo project uses dbt seeds instead of warehouse source tables.
+# Keeping the raw source definitions out of the lineage avoids misleading docs
+# while still leaving the project easy to extend to a warehouse-backed model.

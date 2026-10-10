@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_loans
+    description: >-
+      Standardised loan fact records ready for downstream analysis.
+      This model keeps the grain at one row per loan and normalises the
+      most important financial and operational fields.
+    columns:
+      - name: loan_id
+        description: Unique identifier for each loan.
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Customer associated with the loan.
+        tests:
+          - not_null
+      - name: origination_date
+        description: Date the loan was originated.
+        tests:
+          - not_null
+      - name: loan_amount
+        description: Original principal amount disbursed.
+        tests:
+          - not_null
+      - name: interest_rate
+        description: Annual interest rate for the loan.
+        tests:
+          - not_null
+      - name: tenure_months
+        description: Contract tenure in months.
+        tests:
+          - not_null
+
+  - name: stg_repayments
+    description: >-
+      Standardised repayment events linked to loan IDs for cash flow and
+      portfolio-performance analysis.
+    columns:
+      - name: repayment_id
+        description: Unique identifier for each repayment event.
+        tests:
+          - unique
+          - not_null
+      - name: loan_id
+        description: Loan associated with the repayment event.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_loans')
+                field: loan_id
+      - name: payment_date
+        description: Date the payment was posted.
+        tests:
+          - not_null
+      - name: repayment_amount
+        description: Total amount paid in the repayment event.
+        tests:
+          - not_null
+      - name: principal_component
+        description: Principal portion of the repayment.
+        tests:
+          - not_null
+      - name: interest_component
+        description: Interest portion of the repayment.
+        tests:
+          - not_null
+      - name: penalty_amount
+        description: Penalty portion of the repayment.
+        tests:
+          - not_null

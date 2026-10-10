@@ -1,0 +1,4 @@
+loan_id,customer_id,origination_date,loan_amount,interest_rate,tenure_months,employee_id,medium_id
+L001,C001,2024-01-05,10000.00,0.10,12,E001,WEB
+L002,C002,2024-01-12,25000.00,0.12,24,E002,BRANCH
+L003,C003,2024-02-01,18000.00,0.09,18,E003,MOBILE
